@@ -39,7 +39,7 @@ Download the script designed to simulate a zombie process scenario from the repo
 wget https://raw.githubusercontent.com/INTERNSHIPTASKS/Basic-Linux/main/Task2
 ```
 
-![Root Access and Download](./Screenshot%202026-08-07%20094426.png)
+![Root Access and Download](./S1.png)
 
 *Explanation*: The command fetches the `Task2` file into the current working directory (`/root`).
 
@@ -53,7 +53,7 @@ chmod +x Task2
 ls -l
 ```
 
-![Make Executable](./Screenshot%202026-08-07%20094437.png)
+![Make Executable](./S2.png)
 
 *Explanation*: Running `chmod +x Task2` modifies the file permissions. The filename appears highlighted in green when listed with `ls`, confirming executable status.
 
@@ -66,7 +66,7 @@ Verify that the GNU Compiler Collection (`gcc`) is installed on the system, as t
 gcc --version
 ```
 
-![Check GCC Version](./Screenshot%202026-08-07%20094612.png)
+![Check GCC Version](./S3.png)
 
 *Explanation*: Confirms `gcc 9.4.0` is available on the Ubuntu system.
 
@@ -81,7 +81,7 @@ Run the executable to spawn the target process, then filter active system proces
 ps -el | grep Z
 ```
 
-![Detect Zombie Process](./Screenshot%202026-08-07%20094620.png)
+![Detect Zombie Process](./S4.png)
 
 #### Output Analysis:
 ```text
@@ -114,7 +114,7 @@ kill -9 5478
 ps -el | grep Z
 ```
 
-![Kill Parent & Verify Cleanup](./Screenshot%202026-08-07%20094943.png)
+![Kill Parent & Verify Cleanup](./S5.png)
 
 *Explanation*: 
 1. `kill -9 5478` terminates the parent process.
