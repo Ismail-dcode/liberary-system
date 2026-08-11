@@ -105,26 +105,26 @@ When `./docker_install.sh` is run, an introductory GTK dialog welcomes the user 
 #### Case 2A: Docker Already Installed
 If Docker is detected on the system, the wizard displays the installed version and exits gracefully without making any changes.
 
-![Step 2A: Docker Already Installed](./Docker-detected(FOUND).png)
+![Step 2A: Docker Already Installed](./docker_GUI/Docker-detected(FOUND).png)
 
 #### Case 2B: Docker Not Found Confirmation
 If Docker is not detected, the wizard prompts the user with a decision modal asking for confirmation to install.
 
-![Step 2B: Docker Not Found](./Docker-detected(NOT-FOUND).png)
+![Step 2B: Docker Not Found](./docker_GUI/Docker-detected(NOT-FOUND).png)
 
 ---
 
 ### Step 3: Operating System Detection
 Upon user confirmation, the script inspects `/etc/os-release` and displays the host Linux distribution.
 
-![Step 3: Operating System Detected](./OS-detected.png)
+![Step 3: Operating System Detected](./docker_GUI/OS-detected.png)
 
 ---
 
 ### Step 4: Installation & Progress Feedback
 A real-time Zenity progress bar displays visual feedback while updating packages, installing Docker, and starting `docker.service`.
 
-![Step 4: Installing Docker Progress Bar](./installing.png)
+![Step 4: Installing Docker Progress Bar](./docker_GUI/installing.png)
 
 ---
 
@@ -133,9 +133,9 @@ A real-time Zenity progress bar displays visual feedback while updating packages
 #### Success GUI Summary
 After installation, the wizard verifies Docker availability and service status, showing a final success dialog.
 
-![Step 5: Installation Successful](./install-successfull.png)
+![Step 5: Installation Successful](./docker_GUI/install-successfull.png)
 
 #### Terminal Command Verification
 Confirmation in terminal validating `docker --version`.
 
-![Step 6: Terminal Verification](./docker-verify.png)
+![Step 6: Terminal Verification](./docker_GUI/docker-verify.png)
