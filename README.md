@@ -1,141 +1,141 @@
-# Detailed Linux Guide: Simulating, Identifying, and Cleaning Up Zombie Processes
+# Docker Installation Wizard (Zenity GUI)
 
-## 📌 Executive Summary
-This document provides a detailed, step-by-step walkthrough of identifying, inspecting, and resolving **Zombie Processes** in a Linux environment (Ubuntu). It covers both the theoretical context of process state management and practical CLI commands used to manipulate and clean up defunct processes.
-
----
-
-## 🧠 Theoretical Background: What is a Zombie Process?
-
-In Linux operating systems:
-- When a process terminates, it doesn't immediately vanish from the system memory process table.
-- **Zombie Process Definition**: A process that has finished execution (via `exit()` syscall) but still retains an entry in the Operating System's Process Table so its parent process can read its exit status.
-- **Process State Code**: Identified by **`Z`** state or **`<defunct>`** tag in process listings (`ps`, `top`).
-- **Why are they harmful?**: While zombie processes do not consume CPU or RAM memory (since their memory space is released), they consume process table entries (PIDs). If the process table fills up with zombies, no new processes can be created.
-- **Why can't you `kill -9 <zombie_pid>` directly?**: A zombie process is **already dead**. You cannot kill what is already dead!
-- **How to remove a Zombie**:
-  1. The parent process must read the child's exit status using `wait()` or `waitpid()` (Reaping).
-  2. If the parent process is faulty or unresponsive, **killing the parent process (`kill -9 <parent_pid>`)** causes the zombie process to be adopted by process ID 1 (`init` or `systemd`), which automatically calls `wait()` and cleans up the zombie.
+A lightweight Bash script using **Zenity GTK GUI** to automate Docker detection, user confirmation, OS detection, installation, service management, and verification on Linux systems.
 
 ---
 
-## 🛠 Step-by-Step Task Execution
+## 🔄 Application Flowchart
 
-### Step 1: Gain Superuser (Root) Privileges
-Managing system processes and running kernel test tools requires administrative permissions.
+```mermaid
+flowchart TD
+    Start([Start]) --> Welcome[1. Welcome Screen]
+    Welcome --> Check{Docker Installed?}
+    Check -- Yes --> Exist[Show Version & Exit]
+    Check -- No --> Ask{Ask Confirmation}
+    Ask -- No --> Cancel[Exit Cancelled]
+    Ask -- Yes --> OS[2. Detect OS]
+    OS --> Install[3. Install Docker + Progress Bar]
+    Install --> Service[4. Enable & Start Service]
+    Service --> Verify{5. Verify Installation}
+    Verify -- Success --> SuccessMsg[Show Success GUI]
+    Verify -- Fail --> FailMsg[Show Error GUI]
+```
+
+---
+
+## 🚀 Prerequisites & Quick Start
 
 ```bash
-sudo -i
-# OR
-su -
+# 1. Install Zenity (GTK GUI utility)
+sudo apt update && sudo apt install -y zenity
+
+# 2. Make script executable
+chmod +x docker_install.sh
+
+# 3. Run the wizard
+./docker_install.sh
 ```
 
 ---
 
-### Step 2: Download the Task Script / Binary
-Download the script designed to simulate a zombie process scenario from the repository using `wget`:
+## 📜 Full Script (`docker_install.sh`)
 
 ```bash
-wget https://raw.githubusercontent.com/INTERNSHIPTASKS/Basic-Linux/main/Task2
-```
+#!/usr/bin/env bash
+set -e
 
-![Root Access and Download](./S1.png)
+# 1. Check Dependency
+command -v zenity &>/dev/null || { echo "Zenity required"; exit 1; }
 
-*Explanation*: The command fetches the `Task2` file into the current working directory (`/root`).
+# 2. Welcome Screen
+zenity --info --title="Docker Installation Wizard" \
+  --text="Welcome to Docker Installation Wizard\n\nThis wizard will check your system and install Docker if required.\n\nClick OK to continue." --width=400 || exit 0
 
----
+# 3. Check if Docker is Installed
+if command -v docker &>/dev/null; then
+    DOCKER_VER=$(docker --version)
+    zenity --info --title="Docker Already Installed" \
+      --text="Docker is already installed.\n\n$DOCKER_VER\n\nNo installation is required." --width=450
+    exit 0
+fi
 
-### Step 3: Make the Script Executable
-By default, downloaded files do not have execution permissions. Use `chmod` to grant execute permissions (`+x`):
+# 4. User Confirmation Prompt
+zenity --question --title="Docker Installation" \
+  --text="Docker was not found on this system.\n\nWould you like to install Docker now?" --width=400 || exit 0
 
-```bash
-chmod +x Task2
-ls -l
-```
+# 5. OS Detection
+. /etc/os-release 2>/dev/null || OS_NAME="Linux"
+zenity --info --title="System Detection" \
+  --text="Operating System Detected\n\n${PRETTY_NAME:-$OS_NAME}\n\nThe Docker installation will now begin." --width=400 || exit 0
 
-![Make Executable](./S2.png)
+# 6. Install Docker with Progress Bar
+(
+    echo "10" ; echo "# Updating package repository lists..."
+    echo "40" ; echo "# Installing Docker..."
+    sudo apt-get update -y >/dev/null 2>&1
+    sudo apt-get install -y docker.io >/dev/null 2>&1 || sudo apt-get install -y docker-ce docker-ce-cli containerd.io >/dev/null 2>&1
+    echo "80" ; echo "# Enabling & starting Docker service..."
+    sudo systemctl enable --now docker >/dev/null 2>&1 || true
+    echo "100" ; echo "# Installation complete!"
+) | zenity --progress --title="Docker Installation" --text="Installing Docker..." --percentage=0 --auto-close --no-cancel
 
-*Explanation*: Running `chmod +x Task2` modifies the file permissions. The filename appears highlighted in green when listed with `ls`, confirming executable status.
-
----
-
-### Step 4: Verify C Compiler Environment (GCC)
-Verify that the GNU Compiler Collection (`gcc`) is installed on the system, as the task script compiles and spawns C-level child process binaries (`mytest`):
-
-```bash
-gcc --version
-```
-
-![Check GCC Version](./S3.png)
-
-*Explanation*: Confirms `gcc 9.4.0` is available on the Ubuntu system.
-
----
-
-### Step 5: Execute the Task & Detect the Zombie Process
-
-Run the executable to spawn the target process, then filter active system processes for Zombie state (`Z`):
-
-```bash
-./Task2
-ps -el | grep Z
-```
-
-![Detect Zombie Process](./S4.png)
-
-#### Output Analysis:
-```text
-F S  UID   PID  PPID  C PRI  NI ADDR SZ WCHAN  TTY      TIME CMD
-1 Z    0  5480  5478  0  80   0 -    0 -      pts/0 00:00:00 mytest <defunct>
-```
-
-| Field Header | Value | Meaning |
-| :--- | :--- | :--- |
-| **S (State)** | `Z` | Process state is **Zombie** |
-| **PID** | `5480` | Process ID of the **Zombie Child Process** |
-| **PPID** | `5478` | Process ID of the **Parent Process** |
-| **CMD** | `mytest <defunct>` | Process command marked as defunct |
-
-To inspect specific formatting:
-```bash
-ps -o pid,ppid,state,cmd -p 5480
+# 7. Verification & Status Display
+if command -v docker &>/dev/null; then
+    DOCKER_VER=$(docker --version)
+    zenity --info --title="Installation Successful" \
+      --text="Docker Installation Completed Successfully!\n\nDocker Version:\n$DOCKER_VER\n\nService Status:\nRunning\n\nDocker is ready to use." --width=450
+else
+    zenity --error --title="Installation Failed" --text="Docker installation failed." --width=400
+fi
 ```
 
 ---
 
-### Step 6: Resolve & Clean Up the Zombie Process
+## 📸 Step-by-Step Execution Workflow & Screenshots
 
-Attempting `kill -9 5480` would fail to clear the table entry because process `5480` has already exited. 
+### Step 1: Welcome Screen
+When `./docker_install.sh` is run, an introductory GTK dialog welcomes the user and explains what the wizard will do.
 
-To clean it up, kill the **Parent Process (`PPID: 5478`)** using `kill -9`:
-
-```bash
-kill -9 5478
-ps -el | grep Z
-```
-
-![Kill Parent & Verify Cleanup](./S5.png)
-
-*Explanation*: 
-1. `kill -9 5478` terminates the parent process.
-2. The zombie process (`5480`) becomes orphaned and is immediately adopted by `init`/`systemd` (PID 1).
-3. PID 1 automatically reaps the child process by invoking `wait()`.
-4. Running `ps -el | grep Z` returns no output, confirming the zombie process is completely removed from the OS process table.
+![Step 1: Welcome Screen](./Welcome.png)
 
 ---
 
-## 📋 Command Cheat Sheet Summary
+### Step 2: Check Docker Installation
 
-| Step | Command | Purpose |
-| :--- | :--- | :--- |
-| 1 | `sudo -i` | Switch to root superuser context |
-| 2 | `wget https://raw.githubusercontent.com/INTERNSHIPTASKS/Basic-Linux/main/Task2` | Download task file from remote repository |
-| 3 | `chmod +x Task2` | Grant execution permissions to `Task2` |
-| 4 | `./Task2` | Execute the program to generate zombie process |
-| 5 | `ps -el \| grep Z` | Filter process tree for Zombie (`Z`) state processes |
-| 6 | `ps -o pid,ppid,state,cmd -p <zombie_pid>` | Inspect specific PID, Parent PID, state & command details |
-| 7 | `kill -9 <parent_pid>` | Force kill parent process so `init` / `systemd` reaps the zombie |
-| 8 | `ps -el \| grep Z` | Verify zombie process is cleared |
+#### Case 2A: Docker Already Installed
+If Docker is detected on the system, the wizard displays the installed version and exits gracefully without making any changes.
+
+![Step 2A: Docker Already Installed](./Docker-detected(FOUND).png)
+
+#### Case 2B: Docker Not Found Confirmation
+If Docker is not detected, the wizard prompts the user with a decision modal asking for confirmation to install.
+
+![Step 2B: Docker Not Found](./Docker-detected(NOT-FOUND).png)
 
 ---
-*Created as part of Linux Process Management Internship Tasks.*
+
+### Step 3: Operating System Detection
+Upon user confirmation, the script inspects `/etc/os-release` and displays the host Linux distribution.
+
+![Step 3: Operating System Detected](./OS-detected.png)
+
+---
+
+### Step 4: Installation & Progress Feedback
+A real-time Zenity progress bar displays visual feedback while updating packages, installing Docker, and starting `docker.service`.
+
+![Step 4: Installing Docker Progress Bar](./installing.png)
+
+---
+
+### Step 5: Verification & Status Report
+
+#### Success GUI Summary
+After installation, the wizard verifies Docker availability and service status, showing a final success dialog.
+
+![Step 5: Installation Successful](./install-successfull.png)
+
+#### Terminal Command Verification
+Confirmation in terminal validating `docker --version`.
+
+![Step 6: Terminal Verification](./docker-verify.png)
